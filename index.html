@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow - Smart Study Planner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">📚 StudyFlow</div>
+            <nav>
+                <div class="nav-item active" data-section="dashboard">📊 Dashboard</div>
+                <div class="nav-item" data-section="subjects">📖 Subjects</div>
+                <div class="nav-item" data-section="schedule">📅 Schedule</div>
+                <div class="nav-item" data-section="tasks">✓ Tasks</div>
+                <div class="nav-item" data-section="analytics">📈 Analytics</div>
+                <div class="nav-item" data-section="settings">⚙️ Settings</div>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn-small" onclick="toggleTheme()">🌙 Theme</button>
+                <button class="btn-small btn-danger" onclick="resetData()">🗑️ Reset</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard -->
+            <section id="dashboard" class="section active">
+                <h1>Dashboard</h1>
+                <div class="stats">
+                    <div class="stat-card"><div class="stat-num" id="totalSubjects">0</div><div>Subjects</div></div>
+                    <div class="stat-card"><div class="stat-num" id="activeTasks">0</div><div>Active Tasks</div></div>
+                    <div class="stat-card"><div class="stat-num" id="completedTasks">0</div><div>Completed</div></div>
+                    <div class="stat-card"><div class="stat-num" id="totalHours">0</div><div>Study Hours</div></div>
+                </div>
+                <div id="upcomingDeadlines" style="margin: 2rem 0;"></div>
+                <div id="recentActivity"></div>
+            </section>
+
+            <!-- Subjects -->
+            <section id="subjects" class="section">
+                <div class="header-section">
+                    <h1>Subjects</h1>
+                    <button class="btn btn-primary" onclick="openModal('subjectModal')">+ Add Subject</button>
+                </div>
+                <div id="subjectsList"></div>
+            </section>
+
+            <!-- Schedule -->
+            <section id="schedule" class="section">
+                <div class="header-section">
+                    <h1>Schedule</h1>
+                    <button class="btn btn-primary" onclick="openModal('scheduleModal')">+ Add Session</button>
+                </div>
+                <input type="date" id="scheduleDate" class="form-input" style="margin-bottom: 1rem;">
+                <div id="scheduleView"></div>
+            </section>
+
+            <!-- Tasks -->
+            <section id="tasks" class="section">
+                <div class="header-section">
+                    <h1>Tasks</h1>
+                    <button class="btn btn-primary" onclick="openModal('taskModal')">+ Add Task</button>
+                </div>
+                <select id="taskFilter" class="form-input" style="margin-bottom: 1rem;">
+                    <option value="all">All Tasks</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+                <div id="tasksList"></div>
+            </section>
+
+            <!-- Analytics -->
+            <section id="analytics" class="section">
+                <h1>Progress Analytics</h1>
+                <div class="grid">
+                    <div class="card"><h3>Subject Progress</h3><div id="subjectProgress"></div></div>
+                    <div class="card"><h3>Time Distribution</h3><div id="timeDistribution"></div></div>
+                </div>
+                <div class="card"><h3>Weekly Stats</h3><div id="weeklyStats"></div></div>
+            </section>
+
+            <!-- Settings -->
+            <section id="settings" class="section">
+                <h1>Settings</h1>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Preferences</h3>
+                        <label><input type="checkbox" id="notifyDeadline"> Deadline Notifications</label>
+                        <label><input type="checkbox" id="notifySchedule"> Schedule Reminders</label>
+                    </div>
+                    <div class="card">
+                        <h3>Data Management</h3>
+                        <button class="btn btn-secondary" onclick="exportData()">📥 Export Data</button>
+                        <button class="btn btn-danger" onclick="resetData()">🗑️ Clear Data</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Subject Modal -->
+    <div id="subjectModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Subject</h2>
+            <form onsubmit="handleSubjectSubmit(event)">
+                <input type="text" id="subjectName" placeholder="Subject Name *" required class="form-input">
+                <input type="text" id="subjectCode" placeholder="Subject Code" class="form-input">
+                <select id="subjectPriority" class="form-input">
+                    <option value="low">Low Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="high">High Priority</option>
+                </select>
+                <input type="color" id="subjectColor" value="#6366f1" class="form-input">
+                <input type="text" id="subjectTeacher" placeholder="Instructor" class="form-input">
+                <textarea id="subjectDescription" placeholder="Description" class="form-input" rows="2"></textarea>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('subjectModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Task</h2>
+            <form onsubmit="handleTaskSubmit(event)">
+                <input type="text" id="taskTitle" placeholder="Task Title *" required class="form-input">
+                <select id="taskSubject" required class="form-input"></select>
+                <select id="taskType" required class="form-input">
+                    <option value="assignment">Assignment</option>
+                    <option value="exam">Exam</option>
+                    <option value="project">Project</option>
+                    <option value="homework">Homework</option>
+                </select>
+                <input type="datetime-local" id="taskDeadline" required class="form-input">
+                <select id="taskPriority" class="form-input">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <textarea id="taskDescription" placeholder="Description" class="form-input" rows="2"></textarea>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Study Session</h2>
+            <form onsubmit="handleScheduleSubmit(event)">
+                <select id="scheduleSubject" required class="form-input"></select>
+                <input type="date" id="scheduleDate" required class="form-input">
+                <input type="time" id="scheduleStartTime" required class="form-input">
+                <input type="time" id="scheduleEndTime" required class="form-input">
+                <select id="scheduleType" class="form-input">
+                    <option value="lecture">Lecture Review</option>
+                    <option value="practice">Practice</option>
+                    <option value="revision">Revision</option>
+                    <option value="group">Group Study</option>
+                </select>
+                <textarea id="scheduleNotes" placeholder="Notes" class="form-input" rows="2"></textarea>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
