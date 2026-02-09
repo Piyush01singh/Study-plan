@@ -1,0 +1,39 @@
+# StudyFlow – Smart Study Planner
+
+StudyFlow is a responsive web-based study planner that helps students manage subjects, tasks, study sessions, and track progress in one organised dashboard.
+
+## Features
+
+- Dashboard overview (subjects, tasks, study hours)
+- Subject management with priority and custom colours
+- Task tracking with deadlines and filters (pending, completed, overdue)
+- Study session scheduling with time slots
+- Progress analytics and weekly stats
+- Theme toggle and local data storage
+- Data export and reset options
+
+## Tech Stack
+
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- Browser Local Storage
+
+## Project Structure
+
+- index.html
+- styles.css
+- script.js
+- readme
+
+## How to Run
+
+1. Open index.html in your browser
+2. No backend or server required
+
+## Future Scope
+
+- Backend integration
+- Authentication system
+- Cloud sync
+- AI-based study insights

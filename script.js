@@ -1,4 +1,3 @@
-// Database
 const DB = {
     subjects: [],
     tasks: [],
@@ -7,7 +6,6 @@ const DB = {
     activity: []
 };
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupEventListeners();
@@ -15,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setScheduleDate();
 });
 
-// LocalStorage
 function saveData() {
     localStorage.setItem('studyflow', JSON.stringify(DB));
 }
@@ -28,7 +25,6 @@ function loadData() {
     document.getElementById('notifySchedule').checked = DB.settings.notifySchedule;
 }
 
-// Theme
 function toggleTheme() {
     const newTheme = DB.settings.theme === 'dark' ? 'light' : 'dark';
     DB.settings.theme = newTheme;
@@ -44,7 +40,6 @@ function applyTheme(theme) {
     }
 }
 
-// Navigation
 function setupEventListeners() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -82,7 +77,6 @@ function showSection(section) {
     if (section === 'analytics') updateAnalytics();
 }
 
-// Modals
 function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
     populateSelects();
@@ -98,7 +92,6 @@ function populateSelects() {
     document.getElementById('scheduleSubject').innerHTML = '<option>Select subject...</option>' + html;
 }
 
-// Forms
 function handleSubjectSubmit(e) {
     e.preventDefault();
     const id = Date.now();
@@ -160,7 +153,6 @@ function handleScheduleSubmit(e) {
     updateDashboard();
 }
 
-// CRUD Operations
 function deleteSubject(id) {
     if (confirm('Delete this subject?')) {
         DB.subjects = DB.subjects.filter(s => s.id !== id);
@@ -198,7 +190,6 @@ function deleteSchedule(id) {
     updateDashboard();
 }
 
-// Dashboard
 function updateDashboard() {
     document.getElementById('totalSubjects').textContent = DB.subjects.length;
     
@@ -272,7 +263,6 @@ function logActivity(msg) {
     saveData();
 }
 
-// Subjects
 function updateSubjectsList() {
     if (!DB.subjects.length) {
         document.getElementById('subjectsList').innerHTML = 
@@ -314,7 +304,6 @@ function updateSubjectsList() {
     document.getElementById('subjectsList').innerHTML = html;
 }
 
-// Tasks
 function updateTasksList() {
     const filter = document.getElementById('taskFilter').value;
     const now = new Date();
@@ -369,7 +358,6 @@ function updateTasksList() {
     document.getElementById('tasksList').innerHTML = html;
 }
 
-// Schedule
 function setScheduleDate() {
     const input = document.getElementById('scheduleDate');
     if (input) input.valueAsDate = new Date();
@@ -414,7 +402,6 @@ function updateScheduleView() {
     document.getElementById('scheduleView').innerHTML = html;
 }
 
-// Analytics
 function updateAnalytics() {
     let html = '<div class="grid">';
     
@@ -473,7 +460,6 @@ function updateAnalytics() {
     document.getElementById('subjectProgress').parentElement.innerHTML = html;
 }
 
-// Utilities
 function formatDate(date) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -486,7 +472,6 @@ function timeAgo(timestamp) {
     return mins < 60 ? `${mins}m` : hours < 24 ? `${hours}h` : `${days}d`;
 }
 
-// Data Management
 function exportData() {
     const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
