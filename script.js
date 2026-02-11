@@ -25,19 +25,50 @@ function loadData() {
     document.getElementById('notifySchedule').checked = DB.settings.notifySchedule;
 }
 
-function toggleTheme() {
+function toggleTheme(event) {
     const newTheme = DB.settings.theme === 'dark' ? 'light' : 'dark';
     DB.settings.theme = newTheme;
-    applyTheme(newTheme);
+
+    const wave = document.getElementById('themeWave');
+    if (event && wave) {
+        const source = event.currentTarget || event.target;
+        if (source?.getBoundingClientRect) {
+            const rect = source.getBoundingClientRect();
+            wave.style.setProperty('--wave-x', `${Math.round(rect.left + rect.width / 2)}px`);
+            wave.style.setProperty('--wave-y', `${Math.round(rect.top + rect.height / 2)}px`);
+        }
+        wave.classList.remove('to-light', 'to-dark');
+        wave.classList.add(newTheme === 'light' ? 'to-light' : 'to-dark');
+        wave.classList.remove('active');
+        // Restart animation reliably when toggled quickly.
+        void wave.offsetWidth;
+        wave.classList.add('active');
+        const delay = newTheme === 'dark' ? 1200 : 540;
+        setTimeout(() => applyTheme(newTheme), delay);
+    } else {
+        applyTheme(newTheme);
+    }
+
     saveData();
 }
 
 function applyTheme(theme) {
     if (theme === 'light') {
         document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-mode');
     } else {
         document.body.classList.remove('light-theme');
+        document.body.classList.add('dark-mode');
     }
+    syncThemeToggle(theme);
+}
+
+function syncThemeToggle(theme) {
+    const toggle = document.getElementById('themeToggle');
+    if (!toggle) return;
+    const targetTheme = theme === 'light' ? 'dark' : 'light';
+    toggle.setAttribute('aria-label', `Switch to ${targetTheme} theme`);
+    toggle.setAttribute('title', `Switch to ${targetTheme} theme`);
 }
 
 function setupEventListeners() {
@@ -139,7 +170,7 @@ function handleScheduleSubmit(e) {
     DB.schedule.push({
         id,
         subjectId: parseInt(document.getElementById('scheduleSubject').value),
-        date: new Date(document.getElementById('scheduleDate').value),
+        date: new Date(document.getElementById('scheduleModalDate').value),
         startTime: document.getElementById('scheduleStartTime').value,
         endTime: document.getElementById('scheduleEndTime').value,
         type: document.getElementById('scheduleType').value,
@@ -205,15 +236,16 @@ function updateDashboard() {
     DB.schedule.forEach(s => {
         const sDate = new Date(s.date);
         if (sDate >= weekStart) {
-            const start = parseInt(s.startTime.split(':')[0]);
-            const end = parseInt(s.endTime.split(':')[0]);
-            hours += (end - start);
+            const start = parseTimeToMinutes(s.startTime);
+            const end = parseTimeToMinutes(s.endTime);
+            hours += Math.max(0, end - start) / 60;
         }
     });
-    document.getElementById('totalHours').textContent = hours;
+    document.getElementById('totalHours').textContent = hours.toFixed(1);
     
     updateUpcomingDeadlines();
     updateRecentActivity();
+    updateAnalytics();
 }
 
 function updateUpcomingDeadlines() {
@@ -270,14 +302,14 @@ function updateSubjectsList() {
         return;
     }
 
-    const grouped = { high: [], medium: [], low: [] };
+    const grouped = { '4': [], '3': [], '2': [] };
     DB.subjects.forEach(s => grouped[s.priority].push(s));
 
     let html = '';
-    Object.entries(grouped).forEach(([priority, subjects]) => {
+    Object.entries(grouped).forEach(([credits, subjects]) => {
         if (subjects.length) {
-            html += `<h3 style="text-transform: capitalize; margin-top: 1.5rem;">${priority} Priority</h3>`;
-            html += '<div class="grid">';
+            html += `<h3 style="text-transform: capitalize; margin-top: 1.5rem;">${credits} Credit</h3>`;
+            html += '<div class="subjects-grid">';
             subjects.forEach(s => {
                 const tasks = DB.tasks.filter(t => t.subjectId === s.id && !t.completed).length;
                 html += `
@@ -359,8 +391,11 @@ function updateTasksList() {
 }
 
 function setScheduleDate() {
-    const input = document.getElementById('scheduleDate');
-    if (input) input.valueAsDate = new Date();
+    const today = new Date();
+    const calendarInput = document.getElementById('scheduleDate');
+    const modalInput = document.getElementById('scheduleModalDate');
+    if (calendarInput) calendarInput.valueAsDate = today;
+    if (modalInput) modalInput.valueAsDate = today;
 }
 
 function updateScheduleView() {
@@ -403,15 +438,17 @@ function updateScheduleView() {
 }
 
 function updateAnalytics() {
-    let html = '<div class="grid">';
-    
-    // Subject Progress
-    html += '<div class="card"><h3>Subject Progress</h3>';
+    const subjectProgressEl = document.getElementById('subjectProgress');
+    const timeDistributionEl = document.getElementById('timeDistribution');
+    const weeklyStatsEl = document.getElementById('weeklyStats');
+    if (!subjectProgressEl || !timeDistributionEl || !weeklyStatsEl) return;
+
+    // Subject progress
     if (DB.subjects.length) {
-        html += DB.subjects.map(s => {
+        subjectProgressEl.innerHTML = DB.subjects.map(s => {
             const tasks = DB.tasks.filter(t => t.subjectId === s.id);
             const completed = tasks.filter(t => t.completed).length;
-            const percent = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
+            const percent = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
             return `
                 <div style="margin-bottom: 1rem;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
@@ -425,39 +462,95 @@ function updateAnalytics() {
             `;
         }).join('');
     } else {
-        html += '<div style="color: var(--text-sec);">No subjects yet</div>';
+        subjectProgressEl.innerHTML = '<div style="color: var(--text-sec);">No subjects yet</div>';
     }
-    html += '</div>';
 
-    // Time Distribution
-    html += '<div class="card"><h3>Study Hours</h3>';
+    // Time distribution
     const subjectHours = {};
     DB.schedule.forEach(s => {
         const subject = DB.subjects.find(sub => sub.id === s.subjectId);
-        if (subject) {
-            const start = parseInt(s.startTime.split(':')[0]);
-            const end = parseInt(s.endTime.split(':')[0]);
-            subjectHours[subject.name] = (subjectHours[subject.name] || 0) + (end - start);
-        }
+        if (!subject) return;
+        const start = parseTimeToMinutes(s.startTime);
+        const end = parseTimeToMinutes(s.endTime);
+        const durationHours = Math.max(0, end - start) / 60;
+        subjectHours[subject.name] = (subjectHours[subject.name] || 0) + durationHours;
     });
-    if (Object.keys(subjectHours).length) {
-        html += Object.entries(subjectHours).map(([name, hours]) => `
-            <div style="margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                    <span>${name}</span>
-                    <span style="color: #14b8a6; font-weight: 600;">${hours}h</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${Math.min(hours * 10, 100)}%; background: #14b8a6;"></div>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        html += '<div style="color: var(--text-sec);">No schedule data</div>';
-    }
-    html += '</div></div>';
 
-    document.getElementById('subjectProgress').parentElement.innerHTML = html;
+    const totalHours = Object.values(subjectHours).reduce((sum, h) => sum + h, 0);
+    if (totalHours > 0) {
+        timeDistributionEl.innerHTML = Object.entries(subjectHours).map(([name, hours]) => {
+            const percent = Math.round((hours / totalHours) * 100);
+            return `
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span>${name}</span>
+                        <span style="color: var(--accent); font-weight: 600;">${hours.toFixed(1)}h</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percent}%;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        timeDistributionEl.innerHTML = '<div style="color: var(--text-sec);">No schedule data</div>';
+    }
+
+    // Weekly stats
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const sessionsThisWeek = DB.schedule.filter(s => {
+        const sDate = new Date(s.date);
+        return sDate >= weekStart && sDate < weekEnd;
+    });
+    const studyHoursWeek = sessionsThisWeek.reduce((sum, s) => {
+        const start = parseTimeToMinutes(s.startTime);
+        const end = parseTimeToMinutes(s.endTime);
+        return sum + Math.max(0, end - start) / 60;
+    }, 0);
+
+    const tasksDueWeek = DB.tasks.filter(t => {
+        const d = new Date(t.deadline);
+        return d >= weekStart && d < weekEnd;
+    }).length;
+    const overdueTasks = DB.tasks.filter(t => !t.completed && new Date(t.deadline) < now).length;
+    const completionRate = DB.tasks.length
+        ? Math.round((DB.tasks.filter(t => t.completed).length / DB.tasks.length) * 100)
+        : 0;
+
+    weeklyStatsEl.innerHTML = `
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.9rem;">
+            <div class="card" style="margin: 0; padding: 1rem;">
+                <div style="color: var(--text-sec); font-size: 0.8rem;">Sessions This Week</div>
+                <div style="font-size: 1.35rem; font-weight: 700; color: var(--text-strong);">${sessionsThisWeek.length}</div>
+            </div>
+            <div class="card" style="margin: 0; padding: 1rem;">
+                <div style="color: var(--text-sec); font-size: 0.8rem;">Study Hours</div>
+                <div style="font-size: 1.35rem; font-weight: 700; color: var(--text-strong);">${studyHoursWeek.toFixed(1)}h</div>
+            </div>
+            <div class="card" style="margin: 0; padding: 1rem;">
+                <div style="color: var(--text-sec); font-size: 0.8rem;">Tasks Due This Week</div>
+                <div style="font-size: 1.35rem; font-weight: 700; color: var(--text-strong);">${tasksDueWeek}</div>
+            </div>
+            <div class="card" style="margin: 0; padding: 1rem;">
+                <div style="color: var(--text-sec); font-size: 0.8rem;">Completion Rate</div>
+                <div style="font-size: 1.35rem; font-weight: 700; color: var(--text-strong);">${completionRate}%</div>
+                <div style="font-size: 0.78rem; color: var(--text-sec); margin-top: 0.2rem;">${overdueTasks} overdue</div>
+            </div>
+        </div>
+    `;
+}
+
+function parseTimeToMinutes(value) {
+    if (!value || !value.includes(':')) return 0;
+    const [hour, minute] = value.split(':').map(Number);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return 0;
+    return (hour * 60) + minute;
 }
 
 function formatDate(date) {

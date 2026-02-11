@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="bg-waves" aria-hidden="true">
+        <span class="wave wave-1"></span>
+        <span class="wave wave-2"></span>
+        <span class="wave wave-3"></span>
+    </div>
+    <div class="theme-wave" id="themeWave" aria-hidden="true"></div>
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -20,8 +26,26 @@
                 <div class="nav-item" data-section="settings">⚙️ Settings</div>
             </nav>
             <div class="sidebar-footer">
-                <button class="btn-small" onclick="toggleTheme()">🌙 Theme</button>
-                <button class="btn-small btn-danger" onclick="resetData()">🗑️ Reset</button>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme(event)" aria-label="Toggle theme" title="Toggle theme">
+                    <span class="theme-toggle-icon" aria-hidden="true">
+                        <svg class="icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 2v2"></path>
+                            <path d="M12 20v2"></path>
+                            <path d="m4.93 4.93 1.41 1.41"></path>
+                            <path d="m17.66 17.66 1.41 1.41"></path>
+                            <path d="M2 12h2"></path>
+                            <path d="M20 12h2"></path>
+                            <path d="m6.34 17.66-1.41 1.41"></path>
+                            <path d="m19.07 4.93-1.41 1.41"></path>
+                        </svg>
+                        <svg class="icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                        </svg>
+                    </span>
+                    <span class="theme-toggle-label">Theme</span>
+                </button>
+                <button class="btn-small btn-danger reset-toggle" onclick="resetData()">🗑️ Reset</button>
             </div>
         </aside>
 
@@ -112,9 +136,9 @@
                 <input type="text" id="subjectName" placeholder="Subject Name *" required class="form-input">
                 <input type="text" id="subjectCode" placeholder="Subject Code" class="form-input">
                 <select id="subjectPriority" class="form-input">
-                    <option value="low">Low Priority</option>
-                    <option value="medium" selected>Medium Priority</option>
-                    <option value="high">High Priority</option>
+                    <option value="2" selected>2 Credit</option>
+                    <option value="3">3 Credit</option>
+                    <option value="4">4 Credit</option>
                 </select>
                 <input type="color" id="subjectColor" value="#6366f1" class="form-input">
                 <input type="text" id="subjectTeacher" placeholder="Instructor" class="form-input">
@@ -161,7 +185,7 @@
             <h2>Add Study Session</h2>
             <form onsubmit="handleScheduleSubmit(event)">
                 <select id="scheduleSubject" required class="form-input"></select>
-                <input type="date" id="scheduleDate" required class="form-input">
+                <input type="date" id="scheduleModalDate" required class="form-input">
                 <input type="time" id="scheduleStartTime" required class="form-input">
                 <input type="time" id="scheduleEndTime" required class="form-input">
                 <select id="scheduleType" class="form-input">
